@@ -1,123 +1,78 @@
 require('dotenv').config();
 const express = require("express");
-const bcrypt = require("bcryptjs");
 const app = express();
-const conn = require("./config/database");
-const jwt = require("jsonwebtoken");
-const User = require('./model/register_user');
-const auth = require("./middleware/auth");
+const conn = require("./config/auth.database");
+const User = require('./model/auth.model');
+const router = require("./routes/auth.route")
 const redis = require("redis");
 
 const port = process.env.PORT || 8080;
 const REDIS_PORT = process.env.REDIS_PORT || 6379;
 
-const client = redis.createClient(REDIS_PORT);
+let redisClient;
+
+(async () => {
+    
+    redisClient = redis.createClient(REDIS_PORT);
+    redisClient.on("error", (error) => console.error(`Error : ${error}`));
+    
+    await redisClient.connect();
+})();
 
 app.use(express.json());
 app.use(express.urlencoded({extended:false}))
+
+// console.log('hh',conn)
+app.use("/auth",router)
 
 app.get("/", (req, res) => {
     res.send("Hi");
 })
 
-app.post("/register", async (req, res) =>{
+const getUser = async (req, res) =>
+{
     try {
-        
-        const { first_name, last_name, email, password, phonenumber } = req.body;
+        console.log('fetching data ....');
+        const user = await User.find({});
+        console.log("Request for user data sent to API")
 
-        if (!(email && password && first_name && last_name && phonenumber)) {
-            res.status(400).send("All input is required");
-        }
-        
-        const oldUser = await User.findOne({email});
-
-        if(oldUser)
+        if(!user)
         {
-            return res.status(409).send("User already exists. Please Login");
+            return res.send('No users of name exists')
         }
-
-        console.log(`The current password is ${password}`);
-
-        encryptedPassword = await bcrypt.hash(password, 10);
-
-        console.log(`The current password is ${encryptedPassword}`);
-
-        const registerUser = await User.create({
-            first_name,
-            last_name,
-            email: email.toLowerCase(), // sanitize: convert email to lowercase
-            password: encryptedPassword,
-            phonenumber,
-        });
-
-        console.log("the success part" + registerUser);
-
-        const registered_user = await registerUser.save();
-        res.status(201).json(registerUser);
-
-    } 
-    
-    catch (error) {
-        res.status(400).send(error)
-    }
-});
-
-app.post("/login", async (req, res) =>{
-    try {
-        const { email, password } = req.body;
-
-        console.log(email, password);
-
-        if (!(email && password)) {
-            res.status(400).send("All input is required");
-        }
-
-        console.log("email password both entered");
-
-        const user = await User.findOne({ email });
-
+        
         console.log(user);
 
-        if (!user) {
-            return res.status(400).json({ message: 'Invalid Email' });
-        }
-
-        console.log(password);
-
-        const isMatch = await bcrypt.compare(password, user.password);
-
-        console.log(isMatch);
-
-        if(!isMatch)
-        {
-           return res.status(400).json({ message: 'Invalid Password' });
-        }
+        redisClient.set('userData', JSON.stringify(user));
+        redisClient.on("error", (error) => console.error(`Error : ${error}`));
         
-        console.log('process.env.SECRET_KEY ',process.env.SECRET_KEY)
+        res.send(user);
+    } 
 
-        const token = jwt.sign({ userId: user._id,email: user.email, password: user.password }, process.env.SECRET_KEY);
-
-        console.log('token ',token)
-        user.token = token;
-
-        res.json({ message: 'User login successfully', data : user, token : token });
-
-        // res.status(201).json(user);
-
-    } catch (error) {
-        res.status(400).send("Invalid Credentials");
+    catch (err) {
+        console.error(err);
+        res.status(500).send(err);
     }
-});
 
-app.post('/logout', (req, res) => {
-    // Clear the token from the client-side
-    res.clearCookie('token');
-    res.json({ message: 'User Logged Out' });
-  });
+}
 
-app.get("/welcome", auth, (req, res) => {
-    res.status(200).send("Welcome 🙌 ");
-});
+const redis_post = (req, res, next) => {
+    redisClient.get('userData', (err, redis_data) => {
+      if (err) {
+        console.log('Error after redisclient: ', err);
+        res.status(500).send('Error retrieving data from Redis');
+      } else if (redis_data) {
+        console.log(redis_data);
+        res.send(JSON.parse(redis_data));
+      } else {
+        next();
+      }
+    });
+  };
+  
+
+app.get("/user", redis_post ,getUser);
+
 
 app.listen(port, async(req,res)=>{
     await conn;
