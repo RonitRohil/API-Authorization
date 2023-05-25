@@ -102,4 +102,8 @@ const WelcomeUser = (req, res) => {
     return res.status(200).send("Welcome 🙌 ");
 }
 
-module.exports = {registerUser, LoginUser, LogoutUser, WelcomeUser}
+const Intro = (req, res) => {
+    res.send("Hi");
+}
+
+module.exports = {registerUser, LoginUser, LogoutUser, WelcomeUser, Intro}

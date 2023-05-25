@@ -23,11 +23,9 @@ app.use(express.json());
 app.use(express.urlencoded({extended:false}))
 
 // console.log('hh',conn)
-app.use("/auth",router)
+app.use("/",router)
 
-app.get("/", (req, res) => {
-    res.send("Hi");
-})
+
 
 const getUser = async (req, res) =>
 {
