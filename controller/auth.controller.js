@@ -1,7 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+let redisClient = require("../middleware/redis.client");
 const User = require("../model/auth.model");
-
 
 const registerUser = async(req, res) =>{
     try {
@@ -106,4 +106,32 @@ const Intro = (req, res) => {
     res.send("Hi");
 }
 
-module.exports = {registerUser, LoginUser, LogoutUser, WelcomeUser, Intro}
+const getUser = async (req, res) =>
+{
+    try {
+        console.log('fetching data ....');
+        const user = await User.find({});
+        console.log("Request for user data sent to API")
+
+        if(!user)
+        {
+            return res.send('No users of name exists')
+        }
+        
+        console.log(user);
+
+        redisClient.set('userData', JSON.stringify(user));
+        redisClient.on("error", (error) => console.error(`Error : ${error}`));
+        
+        return res.send(user);
+    } 
+
+    catch (err) {
+        console.error(err);
+        return res.status(500).send(err);
+    }
+
+}
+
+
+module.exports = {registerUser, LoginUser, LogoutUser, WelcomeUser, Intro, getUser}
