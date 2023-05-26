@@ -8,12 +8,9 @@ const port = process.env.PORT || 8080;
 
 app.use(express.json());
 app.use(express.urlencoded({extended:false}))
-
-// console.log('hh',conn)
 app.use("/",router)
 
 app.listen(port, async(req,res)=>{
     await conn;
     console.log(`server is running at port no ${port}`)
 })
-

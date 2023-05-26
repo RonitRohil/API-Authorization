@@ -5,7 +5,7 @@ const User = require('../model/auth.model');
 
 const verifyToken = async (req, res, next) => {
 
-  console.log('headers ', req.headers)
+  // console.log('headers ', req.headers)
   const { authorization } = req.headers;
 
   if (!authorization) {
@@ -14,9 +14,7 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const token = authorization.replace("Bearer ", "");
-    console.log('token',token)
-
-    console.log('process.env.SECRET_KEY ',process.env.SECRET_KEY)
+    // console.log('token',token)
    
     jwt.verify(token, process.env.SECRET_KEY, (err, payload) => {
       

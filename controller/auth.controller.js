@@ -6,14 +6,19 @@ const User = require("../model/auth.model");
 const getUser = async (req, res) =>
 {
     try {
+
+        //catching
+        const cache = await redisClient.get('userData')
+        if (cache !== null) {
+            return res.json(JSON.parse(cache))
+        }
+
         console.log('fetching data ....');
         const user = await User.find({});
         console.log("Request for user data sent to API")
-    
         console.log(user);
 
-        
-        redisClient.set('userData', JSON.stringify(user), 'EX', 3600);
+        await redisClient.set('userData', JSON.stringify(user), 'EX', 3600);
         console.log("setting userdata to redis");
         // redisClient.on("error", (error) => console.error(`Error : ${error}`));
         
@@ -24,20 +29,17 @@ const getUser = async (req, res) =>
         console.error(err);
         return res.status(500).send(err);
     }
-
 }
 
 const registerUser = async(req, res) =>{
     try {
         
         const { first_name, last_name, email, password, phonenumber } = req.body;
-
         if (!(email && password && first_name && last_name && phonenumber)) {
             res.status(400).send("All input is required");
         }
         
         const oldUser = await User.findOne({email});
-
         if(oldUser)
         {
             return res.status(409).send("User already exists. Please Login");
@@ -63,8 +65,6 @@ const registerUser = async(req, res) =>{
 const LoginUser = async(req, res) => {
     try {
         const { email, password } = req.body;
-        // console.log(email, password);
-
         if (!(email && password)) {
             res.status(400).send("All input is required");
         }
@@ -72,7 +72,6 @@ const LoginUser = async(req, res) => {
         // console.log("email password both entered");
         const user = await User.findOne({ email });
         console.log(user);
-
         if (!user) {
             return res.status(400).json({ message: 'Invalid Email' });
         }
@@ -80,16 +79,12 @@ const LoginUser = async(req, res) => {
         // console.log(password);
         const isMatch = await bcrypt.compare(password, user.password);
         // console.log(isMatch);
-
         if(!isMatch)
         {
            return res.status(400).json({ message: 'Invalid Password' });
         }
-        
-        // console.log('process.env.SECRET_KEY ',process.env.SECRET_KEY)
-        
+              
         const token = jwt.sign({ userId: user._id,email: user.email, password: user.password }, process.env.SECRET_KEY);
-
         console.log('token ',token)
         user.token = token;
 
@@ -106,14 +101,11 @@ const LogoutUser = (req, res) => {
 }
 
 const WelcomeUser = (req, res) => {
-    return res.status(200).send("Welcome 🙌 ");
+    return res.status(200).send("Welcome 🙌, Your authorization was successful....");
 }
 
 const Intro = (req, res) => {
     res.send("Hi");
 }
-
-
-
 
 module.exports = {registerUser, LoginUser, LogoutUser, WelcomeUser, Intro, getUser}
