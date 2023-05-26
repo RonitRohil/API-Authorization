@@ -9,7 +9,7 @@ const getUser = async (req, res) =>
 
         //catching
         const cache = await redisClient.get('userData')
-        if (cache !== null) {
+        if (cache) {
             return res.json(JSON.parse(cache))
         }
 
@@ -18,7 +18,7 @@ const getUser = async (req, res) =>
         console.log("Request for user data sent to API")
         console.log(user);
 
-        await redisClient.set('userData', JSON.stringify(user), 'EX', 3600);
+        await redisClient.set('userData', JSON.stringify(user), 'EX', 5);
         console.log("setting userdata to redis");
         // redisClient.on("error", (error) => console.error(`Error : ${error}`));
         
