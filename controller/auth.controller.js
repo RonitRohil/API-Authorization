@@ -1,7 +1,31 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-let redisClient = require("../middleware/redis.client");
+const redisClient = require("../middleware/redis.client");
 const User = require("../model/auth.model");
+
+const getUser = async (req, res) =>
+{
+    try {
+        console.log('fetching data ....');
+        const user = await User.find({});
+        console.log("Request for user data sent to API")
+    
+        console.log(user);
+
+        
+        redisClient.set('userData', JSON.stringify(user), 'EX', 3600);
+        console.log("setting userdata to redis");
+        // redisClient.on("error", (error) => console.error(`Error : ${error}`));
+        
+        return res.send(user);
+    } 
+
+    catch (err) {
+        console.error(err);
+        return res.status(500).send(err);
+    }
+
+}
 
 const registerUser = async(req, res) =>{
     try {
@@ -19,76 +43,59 @@ const registerUser = async(req, res) =>{
             return res.status(409).send("User already exists. Please Login");
         }
 
-        console.log(`The current password is ${password}`);
-
+        // console.log(`The current password is ${password}`);
         encryptedPassword = await bcrypt.hash(password, 10);
-
-        console.log(`The current password is ${encryptedPassword}`);
+        // console.log(`The current password is ${encryptedPassword}`);
 
         const registerUser = await User.create({
-            first_name,
-            last_name,
-            email: email.toLowerCase(), // sanitize: convert email to lowercase
-            password: encryptedPassword,
-            phonenumber,
+            first_name, last_name, email: email.toLowerCase(), password: encryptedPassword, phonenumber,
         });
 
         console.log("the success part" + registerUser);
-
         const registered_user = await registerUser.save();
         return res.status(201).json(registerUser);
-
     } 
-    
     catch (error) {
         res.status(400).send(error)
     }
 };
 
-
 const LoginUser = async(req, res) => {
     try {
         const { email, password } = req.body;
-
-        console.log(email, password);
+        // console.log(email, password);
 
         if (!(email && password)) {
             res.status(400).send("All input is required");
         }
 
-        console.log("email password both entered");
-
+        // console.log("email password both entered");
         const user = await User.findOne({ email });
-
         console.log(user);
 
         if (!user) {
             return res.status(400).json({ message: 'Invalid Email' });
         }
 
-        console.log(password);
-
+        // console.log(password);
         const isMatch = await bcrypt.compare(password, user.password);
-
-        console.log(isMatch);
+        // console.log(isMatch);
 
         if(!isMatch)
         {
            return res.status(400).json({ message: 'Invalid Password' });
         }
         
-        console.log('process.env.SECRET_KEY ',process.env.SECRET_KEY)
-
+        // console.log('process.env.SECRET_KEY ',process.env.SECRET_KEY)
+        
         const token = jwt.sign({ userId: user._id,email: user.email, password: user.password }, process.env.SECRET_KEY);
 
         console.log('token ',token)
         user.token = token;
 
         return res.json({ message: 'User login successfully', data : user, token : token });
-
-        // res.status(201).json(user);
-
-    } catch (error) {
+    } 
+    catch (error) {
         return res.status(400).send("Invalid Credentials");
     }
 };
@@ -106,32 +113,7 @@ const Intro = (req, res) => {
     res.send("Hi");
 }
 
-const getUser = async (req, res) =>
-{
-    try {
-        console.log('fetching data ....');
-        const user = await User.find({});
-        console.log("Request for user data sent to API")
 
-        if(!user)
-        {
-            return res.send('No users of name exists')
-        }
-        
-        console.log(user);
-
-        redisClient.set('userData', JSON.stringify(user));
-        redisClient.on("error", (error) => console.error(`Error : ${error}`));
-        
-        return res.send(user);
-    } 
-
-    catch (err) {
-        console.error(err);
-        return res.status(500).send(err);
-    }
-
-}
 
 
 module.exports = {registerUser, LoginUser, LogoutUser, WelcomeUser, Intro, getUser}

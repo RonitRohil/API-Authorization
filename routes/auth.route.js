@@ -14,6 +14,6 @@ router.post('/auth/login', LoginUser);
 router.post('/auth/logout', LogoutUser);
 router.get('/auth/welcome', auth , WelcomeUser);
 router.get('/auth', Intro);
-router.get("/auth/user", redis_post ,getUser);
+router.get("/auth/user" , redis_post, getUser);
 
 module.exports = router

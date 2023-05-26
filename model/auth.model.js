@@ -30,13 +30,6 @@ const userSchema = new Schema({
         required: true,
         unique: true    
     },
-
-    // tokens: [{
-    //     token:{
-    //         type: String,
-    //         required:true
-    //     }
-    // }],
 })
 
 const user = model('user',userSchema)

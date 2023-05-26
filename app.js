@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require("express");
 const app = express();
 const conn = require("./config/auth.database");
-const User = require('./model/auth.model');
 const router = require("./routes/auth.route")
 
 const port = process.env.PORT || 8080;
