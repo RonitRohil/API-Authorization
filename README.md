@@ -17,7 +17,6 @@ It also has caching using redis.
 - [BCrypt](https://www.npmjs.com/package/bcryptjs)
 - [Redis](https://www.npmjs.com/package/redis) 
 
-- [Open Weather Map API Key ](https://openweathermap.org/api)
 
 ## Schema
 
